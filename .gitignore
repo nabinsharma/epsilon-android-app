@@ -20,8 +20,8 @@ local.properties
 .project
 
 # Android Studio
-/.idea/workspace.xml
-/.idea/libraries
+.idea/workspace.xml
+.idea/libraries
 .gradle
 /build
 /*/local.properties
