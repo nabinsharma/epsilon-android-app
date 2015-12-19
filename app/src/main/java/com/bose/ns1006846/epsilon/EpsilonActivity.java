@@ -6,6 +6,7 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -22,6 +23,20 @@ import android.widget.ToggleButton;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
 
 public class EpsilonActivity extends AppCompatActivity {
     private static final String TAG = "EpsilonActivity";
@@ -67,6 +82,7 @@ public class EpsilonActivity extends AppCompatActivity {
                     audioRecord.release();
                     Log.d(TAG, "Recorded " + audioBufferOffset + " samples!");
                     // Data is recorded, send to cloud.
+                    new sendDataToServer().execute("www.nabinsharma.com");
                 }
             }
         });
@@ -217,4 +233,54 @@ public class EpsilonActivity extends AppCompatActivity {
         audioTrack.release();
         Log.d(TAG, "Playing ... Done.");
     }
+
+    private JSONObject jsonifyAudioData() {
+        JSONObject dataPacket = new JSONObject();
+        JSONArray audioData = new JSONArray(Arrays.asList(audioBuffer));
+        try {
+            dataPacket.put("data", audioData);
+            dataPacket.put("length", audioBufferOffset);
+            dataPacket.put("channels", 1);
+        } catch (JSONException e) {
+            // TODO
+        }
+        return dataPacket;
+    }
+
+    private class sendDataToServer extends AsyncTask<String, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(String... params) {
+            android.os.Debug.waitForDebugger();
+            Boolean result = false;
+            URL url = null;
+            try {
+                url = new URL(params[0]);
+            } catch (MalformedURLException e) {
+                // TODO
+            }
+            HttpURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+/*                urlConnection.setDoOutput(true);
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setChunkedStreamingMode(0);
+                OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
+                JSONObject data = jsonifyAudioData();
+                out.write(data.toString().getBytes());*/
+            } catch (IOException e) {
+                Log.e(TAG, "Uninitialized URL Connection!", e);
+            }
+            finally {
+                urlConnection.disconnect();
+                result = true;
+            }
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+        }
+
+    }
+
 }
